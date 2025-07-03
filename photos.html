@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Memories Gallery</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background: radial-gradient(circle at top left, #ffe6f0, #fff0f5);
+      background-image: url('https://www.transparenttextures.com/patterns/hearts.png');
+      background-blend-mode: overlay;
+      color: #333;
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    .heart {
+      position: fixed;
+      top: -10px;
+      color: #ff4f93;
+      animation: fall 6s linear infinite;
+      opacity: 0.7;
+      font-size: 20px;
+    }
+
+    @keyframes fall {
+      0% { transform: translateY(0) rotate(0); opacity: 0.7; }
+      100% { transform: translateY(100vh) rotate(360deg); opacity: 0; }
+    }
+
+    .intro {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100vh;
+      background: linear-gradient(to right, #ff758c, #ff7eb3);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      color: white;
+      font-size: 2rem;
+      font-weight: bold;
+      z-index: 1000;
+      animation: fadeOut 1.2s forwards;
+      animation-delay: 1.5s;
+    }
+
+    .intro p {
+      font-size: 1.2rem;
+      margin-top: 10px;
+    }
+
+    @keyframes fadeOut {
+      to { opacity: 0; visibility: hidden; }
+    }
+
+    header {
+      text-align: center;
+      background: linear-gradient(to right, #ff758c, #ff7eb3);
+      color: white;
+      padding: 30px 10px;
+      font-size: 2.2rem;
+      font-weight: bold;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      letter-spacing: 1.2px;
+    }
+
+    .gallery {
+      position: relative;
+      width: 100vw;
+      height: 75vh;
+      overflow: hidden;
+    }
+
+    .photo {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 90%;
+      max-width: 400px;
+      transform: translate(-50%, -50%);
+      transition: opacity 1s ease-in-out;
+      opacity: 0;
+      z-index: 0;
+    }
+
+    .photo.active {
+      opacity: 1;
+      z-index: 1;
+    }
+
+    .photo img {
+      width: 100%;
+      height: auto;
+      border-radius: 20px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.25);
+    }
+
+    .controls {
+      text-align: center;
+      margin: 20px 0 10px;
+    }
+
+    .controls button {
+      padding: 10px 22px;
+      margin: 0 10px;
+      font-size: 16px;
+      background-color: #ff7eb3;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.3s, transform 0.2s;
+    }
+
+    .controls button:hover {
+      background-color: #ff4f93;
+      transform: scale(1.05);
+    }
+
+    .add-more {
+      text-align: center;
+      margin: 10px auto 20px;
+    }
+
+    .add-more button {
+      padding: 10px 20px;
+      background: #ff91c1;
+      color: white;
+      font-size: 15px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+
+    .add-more button:hover {
+      background: #ff609f;
+    }
+
+    @media (max-width: 600px) {
+      header { font-size: 1.6rem; }
+      .intro { font-size: 1.4rem; }
+      .intro p { font-size: 1rem; }
+      .photo img { border-radius: 12px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="intro">
+    <div>Bili Bili ❤️</div>
+    <p>And Jigi Jigi 🥰</p>
+  </div>
+
+  <header>❤️ Our Memories Gallery ❤️</header>
+
+  <div class="add-more">
+    <button onclick="document.getElementById('fileInput').click()">➕ Add More</button>
+    <input type="file" id="fileInput" accept="image/*" style="display:none" multiple />
+  </div>
+
+  <div class="gallery" id="gallery">
+    <!-- Images will be added by script -->
+  </div>
+
+  <div class="controls">
+    <button onclick="prevPhoto()">⟵ Prev</button>
+    <button onclick="nextPhoto()">Next ⟶</button>
+  </div>
+
+  <script>
+    for (let i = 0; i < 25; i++) {
+      const heart = document.createElement("div");
+      heart.className = "heart";
+      heart.innerHTML = "❤️";
+      heart.style.left = Math.random() * 100 + "vw";
+      heart.style.animationDuration = (Math.random() * 3 + 3) + "s";
+      document.body.appendChild(heart);
+    }
+
+    let current = 0;
+    const gallery = document.getElementById("gallery");
+    const fileInput = document.getElementById("fileInput");
+
+    const basePhotos = [
+      "WhatsApp Image 2025-07-03 at 17.28.04_47f9df4c.jpg",
+      "WhatsApp Image 2025-07-03 at 17.28.05_04d11ee3.jpg",
+      "WhatsApp Image 2025-07-03 at 17.28.05_bfa56b3d.jpg",
+      "WhatsApp Image 2025-07-03 at 17.28.06_525e5946.jpg"
+    ];
+
+    window.onload = function () {
+      const savedImages = JSON.parse(localStorage.getItem("memories")) || [];
+      const allImages = [...basePhotos, ...savedImages];
+      allImages.forEach((src, index) => addPhotoToGallery(src, index === 0));
+      autoSlide();
+    };
+
+    function showPhoto(index) {
+      const photos = document.querySelectorAll(".photo");
+      photos.forEach((photo, i) => {
+        photo.classList.remove("active");
+        if (i === index) photo.classList.add("active");
+      });
+    }
+
+    function nextPhoto() {
+      const photos = document.querySelectorAll(".photo");
+      current = (current + 1) % photos.length;
+      showPhoto(current);
+    }
+
+    function prevPhoto() {
+      const photos = document.querySelectorAll(".photo");
+      current = (current - 1 + photos.length) % photos.length;
+      showPhoto(current);
+    }
+
+    function autoSlide() {
+      setInterval(() => {
+        nextPhoto();
+      }, 4000);
+    }
+
+    let startX = 0;
+    document.addEventListener('touchstart', e => startX = e.touches[0].clientX);
+    document.addEventListener('touchend', e => {
+      let endX = e.changedTouches[0].clientX;
+      if (startX - endX > 50) nextPhoto();
+      else if (endX - startX > 50) prevPhoto();
+    });
+
+    fileInput.addEventListener("change", function (e) {
+      const files = e.target.files;
+      const stored = JSON.parse(localStorage.getItem("memories")) || [];
+      for (let file of files) {
+        const reader = new FileReader();
+        reader.onload = function (event) {
+          const src = event.target.result;
+          addPhotoToGallery(src);
+          stored.push(src);
+          localStorage.setItem("memories", JSON.stringify(stored));
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+
+    function addPhotoToGallery(src, isFirst = false) {
+      const wrapper = document.createElement("div");
+      wrapper.classList.add("photo");
+      if (isFirst) wrapper.classList.add("active");
+      const img = document.createElement("img");
+      img.src = src;
+      img.alt = "Memory";
+      wrapper.appendChild(img);
+      gallery.appendChild(wrapper);
+    }
+  </script>
+</body>
+</html>
